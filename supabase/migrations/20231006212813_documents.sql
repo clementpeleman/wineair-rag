@@ -39,6 +39,11 @@ on documents for select to authenticated using (
   auth.uid() = created_by
 );
 
+create policy "Users can delete their own documents"
+on documents for delete to authenticated using (
+  auth.uid() = created_by
+);
+
 create policy "Users can insert document sections"
 on document_sections for insert to authenticated with check (
   document_id in (
@@ -65,6 +70,15 @@ on document_sections for update to authenticated using (
 
 create policy "Users can query their own document sections"
 on document_sections for select to authenticated using (
+  document_id in (
+    select id
+    from documents
+    where created_by = auth.uid()
+  )
+);
+
+create policy "Users can delete their own document sections"
+on document_sections for delete to authenticated using (
   document_id in (
     select id
     from documents

@@ -6,6 +6,7 @@ import { Database } from '../_lib/database.ts';
 
 const openai = new OpenAI({
   apiKey: Deno.env.get('OPENAI_API_KEY'),
+  baseURL: "https://api.together.xyz/v1",
 });
 
 // These are automatically injected
@@ -69,7 +70,7 @@ Deno.serve(async (req) => {
     .limit(5);
 
   if (matchError) {
-    console.error(matchError);
+    console.error(matchError.message);
 
     return new Response(
       JSON.stringify({
@@ -94,19 +95,18 @@ Deno.serve(async (req) => {
       {
         role: 'user',
         content: codeBlock`
-        You're an AI assistant who answers questions about documents.
+        You're an AI sommelier who's main goal is paring wine with food.
 
         You're a chat bot, so keep your replies succinct.
 
-        You're only allowed to use the documents below to answer the question.
+        The given documents contain information on the available wines. 
+        Try to extract the sweetness, salinity, acidity, bitterness, fatness and piquant level, together with the aroma's of the dish.
 
-        If the question isn't related to these documents, say:
-        "Sorry, I couldn't find any information on that."
+        Leverage existing wine theories, the work of others like Bernard Chen, and the UC Davis wine wheel to provide the best possible pairing with a wine selected from the document.
 
-        If the information isn't available in the below documents, say:
-        "Sorry, I couldn't find any information on that."
+        Give a contrasting and a complementary pairing, provide a brief explanation of why the wine pairs well with the dish.
 
-        Do not go off topic.
+        Don't go off topic, use your own intuition to provide the best possible pairing.
 
         Documents:
         ${injectedDocs}
@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
     ];
 
   const completionStream = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo-0613',
+    model: 'mistralai/Mixtral-8x7B-Instruct-v0.1',
     messages: completionMessages,
     max_tokens: 1024,
     temperature: 0,

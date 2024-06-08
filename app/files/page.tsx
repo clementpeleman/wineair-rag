@@ -4,28 +4,68 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/use-toast';
 import { Database } from '@/supabase/functions/_lib/database';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function FilesPage() {
   const supabase = createClientComponentClient<Database>();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const { data: documents } = useQuery(['files'], async () => {
-    const { data, error } = await supabase
-      .from('documents_with_storage_path')
-      .select();
+  const { data: documents, refetch: refetchDocuments } = useQuery(
+    ['files'],
+    async () => {
+      const { data, error } = await supabase
+        .from('documents_with_storage_path')
+        .select();
 
-    if (error) {
-      toast({
-        variant: 'destructive',
-        description: 'Failed to fetch documents',
-      });
-      throw error;
+      if (error) {
+        toast({
+          variant: 'destructive',
+          description: 'Failed to fetch documents',
+        });
+        throw error;
+      }
+
+      return data;
     }
+  );
 
-    return data;
-  });
+  useEffect(() => {
+    refetchDocuments();
+  }, [refetchDocuments]);
+
+  const deleteDocument = useMutation(
+    async (documentId: number) => {
+      const { error } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', documentId);
+
+      if (error) {
+        throw error;
+      }
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['files']);
+        router.refresh(); // Forceer een herladen van de pagina
+        // console.log("success");
+        toast({
+          variant: 'default',
+          description: 'Document deleted successfully',
+        });
+      },
+      onError: (error) => {
+        toast({
+          variant: 'destructive',
+          description: 'Failed to delete document',
+        });
+        console.error(error);
+      },
+    }
+  );
 
   return (
     <div className="max-w-6xl m-4 sm:m-10 flex flex-col gap-8 grow items-stretch">
@@ -61,33 +101,28 @@ export default function FilesPage() {
       </div>
       {documents && (
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
-          {documents.map((document) => (
-            <div
-              className="flex flex-col gap-2 justify-center items-center border rounded-md p-4 sm:p-6 text-center overflow-hidden cursor-pointer hover:bg-slate-100"
-              onClick={async () => {
-                if (!document.storage_object_path) {
-                  toast({
-                    variant: 'destructive',
-                    description: 'Failed to download file, please try again.',
-                  });
-                  return;
-                }
-
-                const { data, error } = await supabase.storage
-                  .from('files')
-                  .createSignedUrl(document.storage_object_path, 60);
-
-                if (error) {
-                  toast({
-                    variant: 'destructive',
-                    description: 'Failed to download file. Please try again.',
-                  });
-                  return;
-                }
-
-                window.location.href = data.signedUrl;
-              }}
+      {documents?.map((document) => (
+        <div
+          key={document.id}
+          className="flex flex-col gap-2 justify-center items-center border rounded-md p-4 sm:p-6 text-center overflow-hidden cursor-pointer hover:bg-slate-100 relative"
+        >
+          <button
+            className="absolute top-2 right-2 text-gray-500 hover:text-red-500"
+            onClick={() => deleteDocument.mutate(document.id)}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
             >
+              <path
+                fillRule="evenodd"
+                d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
               <svg
                 width="50px"
                 height="50px"

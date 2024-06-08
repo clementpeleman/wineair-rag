@@ -1,4 +1,4 @@
 select vault.create_secret(
-  'http://api.supabase.internal:8000',
+  'https://hmhpopziqdzyftcwqzrd.supabase.co',
   'supabase_url'
 );
