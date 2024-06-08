@@ -108,7 +108,7 @@ export default function FilesPage() {
         >
           <button
             className="absolute top-2 right-2 text-gray-500 hover:text-red-500"
-            onClick={() => deleteDocument.mutate(document.id)}
+            onClick={() => document.id !== null && deleteDocument.mutate(document.id)}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
