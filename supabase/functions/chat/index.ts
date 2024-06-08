@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
     ];
 
   const completionStream = await openai.chat.completions.create({
-    model: 'mistralai/Mixtral-8x7B-Instruct-v0.1',
+    model: 'mistralai/Mistral-7B-Instruct-v0.2',
     messages: completionMessages,
     max_tokens: 1024,
     temperature: 0,
